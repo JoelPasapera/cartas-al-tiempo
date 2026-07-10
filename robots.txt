@@ -1,0 +1,4 @@
+# Sitio privado: no indexar. Borra este archivo (y la meta "robots" del
+# index.html) si algún día quieres que la herramienta aparezca en buscadores.
+User-agent: *
+Disallow: /

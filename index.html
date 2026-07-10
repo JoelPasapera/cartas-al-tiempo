@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <!-- CSP de respaldo: se aplica aunque el host ignore _headers. Las
+       directivas solo-cabecera (frame-ancestors, HSTS) siguen en _headers. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.drand.sh https://api2.drand.sh https://api3.drand.sh https://drand.cloudflare.com https://timeapi.io https://worldtimeapi.org; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#141b2e">
+  <title>Cartas al Tiempo — cartas selladas hasta su fecha</title>
+  <meta name="description" content="Escribe una carta, séllala con una fecha y hora exactas (hora de Lima, Perú) y compártela: no podrá leerse antes de tiempo.">
+  <link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%239E2B25'/%3E%3Cpath d='M21 17h22v5l-8 10 8 10v5H21v-5l8-10-8-10z' fill='%23F7F1E3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+
+  <header class="cabecera">
+    <a class="marca" href="#" id="link-inicio" aria-label="Cartas al Tiempo, inicio">
+      <svg class="marca-sello" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="30" fill="var(--lacre)"/>
+        <circle cx="32" cy="32" r="24" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2"/>
+        <path d="M23 20h18v4l-7 8 7 8v4H23v-4l7-8-7-8z" fill="var(--papel)"/>
+      </svg>
+      <span>Cartas al Tiempo</span>
+    </a>
+    <nav class="pestanas" aria-label="Secciones">
+      <button id="tab-escribir" class="pestana activa" type="button" aria-pressed="true">Escribir</button>
+      <button id="tab-cartas" class="pestana" type="button" aria-pressed="false">
+        Mis cartas <span id="badge-cartas" class="badge" hidden>0</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="contenido">
+
+    <!-- ============ VISTA: ESCRIBIR ============ -->
+    <section id="vista-escribir" class="vista">
+      <div class="intro">
+        <h1>Escribe hoy.<br>Se abre cuando llegue el momento.</h1>
+        <p>Sella una carta con fecha y hora exactas —hora de Lima, Perú—. Hasta entonces viaja cifrada: adelantar el reloj del teléfono no sirve de nada.</p>
+      </div>
+
+      <form id="form-carta" class="papel formulario" method="post" novalidate>
+        <div class="fila-doble">
+          <div class="campo">
+            <label for="campo-para">Para</label>
+            <input id="campo-para" name="para" required maxlength="60" autocomplete="off" spellcheck="false" placeholder="Nombre de quien la recibirá">
+          </div>
+          <div class="campo">
+            <label for="campo-de">De parte de <span class="opcional">(opcional)</span></label>
+            <input id="campo-de" name="de" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Tu nombre">
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="campo-titulo">Título <span class="opcional">(opcional)</span></label>
+          <input id="campo-titulo" name="titulo" maxlength="120" spellcheck="false" placeholder="Ej.: Para tu cumpleaños número 30">
+        </div>
+
+        <div class="campo">
+          <label for="campo-mensaje">Tu carta</label>
+          <textarea id="campo-mensaje" name="mensaje" required rows="10" maxlength="20000" spellcheck="false" placeholder="Querida…"></textarea>
+          <div class="ayuda" id="contador-msg">0 caracteres</div>
+        </div>
+
+        <div class="campo campo-adjuntos">
+          <span class="etiqueta-grupo">Adjuntos <span class="opcional">(opcional)</span></span>
+          <div class="botones-adjuntos">
+            <button class="btn btn-fantasma" id="btn-adj-foto" type="button">Añadir foto</button>
+            <button class="btn btn-fantasma" id="btn-adj-voz" type="button">Grabar voz</button>
+            <input id="input-foto" type="file" accept="image/*" hidden multiple>
+          </div>
+          <div class="grabacion oculto" id="grabacion">
+            <span class="grabacion-punto"></span>
+            <span id="grabacion-tiempo">0:00</span>
+            <button class="btn btn-lacre" id="btn-adj-parar" type="button">Detener</button>
+            <button class="btn btn-fantasma" id="btn-adj-cancelar-voz" type="button">Cancelar</button>
+          </div>
+          <ul class="lista-adjuntos" id="lista-adjuntos"></ul>
+          <div class="ayuda" id="adjuntos-ayuda">Una foto o una nota de voz viajan cifradas dentro de la carta. Con adjuntos, la carta se comparte como <strong>archivo</strong> (no como enlace).</div>
+        </div>
+
+        <fieldset class="sello-config">
+          <legend>El sello</legend>
+          <div class="fila-doble">
+            <div class="campo">
+              <label for="campo-fecha">Se abre el</label>
+              <input id="campo-fecha" name="fecha" type="datetime-local" required>
+              <div class="ayuda">Hora de Lima, Perú · ahora: <span id="hora-lima-actual">—</span></div>
+            </div>
+            <div class="campo">
+              <label for="campo-clave">Contraseña <span class="opcional">(obligatoria)</span></label>
+              <div class="fila-clave">
+                <input id="campo-clave" name="clave" type="password" required minlength="8" autocomplete="new-password" spellcheck="false" placeholder="Frase secreta (mínimo 8)">
+                <button class="btn btn-oro btn-generar" id="btn-generar-clave" type="button">Generar frase</button>
+              </div>
+              <div class="ayuda">Es lo que mantiene la carta cerrada: la clave no viaja con ella, así que nadie —ni un experto— puede abrirla antes. El título y el mensaje solo aparecen con la contraseña. Compártela por otro medio, o recién el día de la apertura.</div>
+            </div>
+          </div>
+
+          <div class="campo campo-visibilidad">
+            <span class="etiqueta-grupo">¿Guardar en «Mis cartas»?</span>
+            <div class="opciones-visibilidad">
+              <label class="opcion-vis">
+                <input type="radio" name="visibilidad" value="publico" checked>
+                <span>Sí, guardar <small>(público)</small></span>
+              </label>
+              <label class="opcion-vis">
+                <input type="radio" name="visibilidad" value="privado">
+                <span>No guardar <small>(privado)</small></span>
+              </label>
+            </div>
+            <div class="ayuda">Privado: la carta no se guarda en este navegador, no deja rastro aquí (solo tú tendrás el enlace o el archivo). Público: aparece en «Mis cartas» y, con la contraseña, podrás ocultarla o eliminarla cuando quieras.</div>
+          </div>
+        </fieldset>
+
+        <p class="error" id="form-error" role="alert" hidden></p>
+
+        <div class="acciones-sellar">
+          <button class="btn btn-lacre grande" id="btn-sellar" type="submit">Sellar la carta</button>
+          <p class="nota">Todo se cifra en tu navegador (AES-256). El contenido nunca pasa por un servidor ni se guarda fuera de tu dispositivo.</p>
+        </div>
+      </form>
+
+      <div id="panel-resultado" class="papel resultado" hidden>
+        <svg class="resultado-sello" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="30" fill="var(--lacre)"/>
+          <circle cx="32" cy="32" r="24" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2"/>
+          <path d="M23 20h18v4l-7 8 7 8v4H23v-4l7-8-7-8z" fill="var(--papel)"/>
+        </svg>
+        <h2>Carta sellada para <span id="resultado-para"></span></h2>
+        <p class="resultado-fecha" id="resultado-fecha"></p>
+
+        <div id="bloque-enlace">
+          <label class="etiqueta-enlace" for="enlace-carta">Enlace de la carta</label>
+          <div class="fila-enlace">
+            <input id="enlace-carta" readonly spellcheck="false">
+            <button class="btn btn-tinta" id="btn-copiar" type="button">Copiar</button>
+          </div>
+        </div>
+        <p class="ayuda" id="nota-enlace"></p>
+
+        <div class="acciones">
+          <button class="btn btn-oro" id="btn-descargar" type="button">Descargar carta sellada (.html)</button>
+          <a class="btn btn-fantasma" id="btn-previa" href="#" target="_blank" rel="noopener">Ver cómo la verá</a>
+        </div>
+        <p class="ayuda consejo" id="resultado-consejo"></p>
+        <div class="acciones secundarias">
+          <button class="btn btn-fantasma" id="btn-otra" type="button">Misma carta, otra persona</button>
+          <button class="btn btn-fantasma" id="btn-nueva" type="button">Nueva carta en blanco</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: MIS CARTAS ============ -->
+    <section id="vista-cartas" class="vista" hidden>
+      <div class="intro compacta">
+        <h1 class="titulo-seccion">Mis cartas selladas</h1>
+        <p>Se guardan solo en este navegador, en este dispositivo.</p>
+      </div>
+
+      <div id="cartas-vacio" class="papel vacio" hidden>
+        <p>Aún no has sellado ninguna carta.</p>
+        <button class="btn btn-lacre" id="btn-ir-escribir" type="button">Escribir la primera</button>
+      </div>
+
+      <ul id="lista-cartas" class="lista-cartas"></ul>
+
+      <div class="barra-cartas" id="barra-cartas" hidden>
+        <button class="btn btn-fantasma" id="btn-ver-ocultas" type="button" hidden>Ver ocultas (0)</button>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: APERTURA ============ -->
+    <section id="vista-apertura" class="vista" hidden>
+      <div class="sobre-escena" id="sobre-escena">
+        <p class="eyebrow">Una carta espera</p>
+        <h1 class="apertura-titular">Para <span id="apertura-para">…</span></h1>
+        <p class="apertura-de" id="apertura-de" hidden>De parte de <span id="apertura-de-nombre"></span></p>
+        <p class="apertura-fecha">Se abre el <strong id="apertura-fecha">…</strong> <span class="tz">(hora de Lima, Perú)</span></p>
+        <p class="badge-hora" id="estado-hora">Verificando la hora oficial…</p>
+
+        <div class="sobre" id="sobre">
+          <div class="sobre-cuerpo"></div>
+          <div class="solapa"></div>
+          <div class="sello-envuelto" aria-hidden="true">
+            <div class="sello-mitad izq">
+              <svg viewBox="0 0 120 120">
+                <g fill="var(--lacre)">
+                  <circle cx="60" cy="18" r="9"/><circle cx="89" cy="26" r="8"/><circle cx="104" cy="50" r="8"/>
+                  <circle cx="103" cy="76" r="9"/><circle cx="86" cy="97" r="8"/><circle cx="60" cy="104" r="9"/>
+                  <circle cx="33" cy="97" r="8"/><circle cx="16" cy="76" r="9"/><circle cx="17" cy="50" r="8"/>
+                  <circle cx="31" cy="26" r="8"/>
+                </g>
+                <circle cx="60" cy="60" r="47" fill="var(--lacre)"/>
+                <circle cx="60" cy="60" r="47" fill="url(#brillo-izq)"/>
+                <circle cx="60" cy="60" r="37" fill="none" stroke="rgba(26,8,6,.35)" stroke-width="2.5"/>
+                <path d="M45 40h30v6l-11.5 14L75 74v6H45v-6l11.5-14L45 46z" fill="var(--papel)" opacity=".95"/>
+                <defs>
+                  <radialGradient id="brillo-izq" cx="35%" cy="30%" r="75%">
+                    <stop offset="0%" stop-color="rgba(255,214,190,.35)"/>
+                    <stop offset="55%" stop-color="rgba(255,214,190,0)"/>
+                    <stop offset="100%" stop-color="rgba(20,4,2,.28)"/>
+                  </radialGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="sello-mitad der">
+              <svg viewBox="0 0 120 120">
+                <g fill="var(--lacre)">
+                  <circle cx="60" cy="18" r="9"/><circle cx="89" cy="26" r="8"/><circle cx="104" cy="50" r="8"/>
+                  <circle cx="103" cy="76" r="9"/><circle cx="86" cy="97" r="8"/><circle cx="60" cy="104" r="9"/>
+                  <circle cx="33" cy="97" r="8"/><circle cx="16" cy="76" r="9"/><circle cx="17" cy="50" r="8"/>
+                  <circle cx="31" cy="26" r="8"/>
+                </g>
+                <circle cx="60" cy="60" r="47" fill="var(--lacre)"/>
+                <circle cx="60" cy="60" r="47" fill="url(#brillo-der)"/>
+                <circle cx="60" cy="60" r="37" fill="none" stroke="rgba(26,8,6,.35)" stroke-width="2.5"/>
+                <path d="M45 40h30v6l-11.5 14L75 74v6H45v-6l11.5-14L45 46z" fill="var(--papel)" opacity=".95"/>
+                <defs>
+                  <radialGradient id="brillo-der" cx="35%" cy="30%" r="75%">
+                    <stop offset="0%" stop-color="rgba(255,214,190,.35)"/>
+                    <stop offset="55%" stop-color="rgba(255,214,190,0)"/>
+                    <stop offset="100%" stop-color="rgba(20,4,2,.28)"/>
+                  </radialGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="cuenta" id="cuenta" role="timer">
+          <div class="celda"><span class="cifra" id="cd-dias">–</span><small>días</small></div>
+          <div class="celda"><span class="cifra" id="cd-horas">–</span><small>horas</small></div>
+          <div class="celda"><span class="cifra" id="cd-min">–</span><small>min</small></div>
+          <div class="celda"><span class="cifra" id="cd-seg">–</span><small>seg</small></div>
+        </div>
+
+        <p class="listo" id="msg-listo" hidden>El momento llegó.</p>
+
+        <div id="panel-clave" class="panel-clave" hidden>
+          <label for="campo-clave-abrir">Esta carta tiene contraseña</label>
+          <div class="fila-enlace">
+            <input type="password" id="campo-clave-abrir" placeholder="Contraseña" autocomplete="off" spellcheck="false">
+            <button class="btn btn-lacre" id="btn-abrir" type="button">Abrir</button>
+          </div>
+        </div>
+
+        <button class="btn btn-lacre grande" id="btn-romper" type="button" hidden>Romper el sello</button>
+        <p class="error" id="msg-apertura" role="alert" hidden></p>
+        <p class="nota nota-clara"><a href="#" id="link-crear">Escribir mi propia carta</a></p>
+      </div>
+
+      <article id="vista-carta" class="papel carta-abierta" hidden>
+        <p class="carta-encabezado">Para <span id="carta-para"></span></p>
+        <h2 id="carta-titulo" hidden></h2>
+        <div id="carta-cuerpo" class="carta-cuerpo"></div>
+        <p id="carta-firma" class="carta-firma" hidden></p>
+        <footer class="carta-pie">
+          <span id="carta-meta"></span>
+          <div class="acciones">
+            <button class="btn btn-fantasma" id="btn-imprimir" type="button">Imprimir o guardar PDF</button>
+            <a href="#" id="link-crear-2" class="btn btn-fantasma">Escribir mi propia carta</a>
+          </div>
+        </footer>
+      </article>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>Cartas al Tiempo · Todo se cifra en tu dispositivo. El contenido no se guarda en ningún servidor.</p>
+  </footer>
+
+  <noscript>
+    <p class="papel aviso-js">Esta página necesita JavaScript para sellar y abrir cartas.</p>
+  </noscript>
+
+  <script src="js/vendor/tlock.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

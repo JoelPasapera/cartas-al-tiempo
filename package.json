@@ -1,0 +1,16 @@
+{
+  "name": "cartas-al-tiempo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs && node pentest.mjs && node humo.mjs && node humo-sellado.mjs"
+  },
+  "devDependencies": {
+    "@noble/curves": "^1.4.0",
+    "@noble/hashes": "^1.4.0",
+    "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
